@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Covert Web-to-App Tracking via Localhost on Android</title>
+    <link href="./css/bootstrap_5.1.3.css" rel="stylesheet">
+    <link href="./css/all.min.css" rel="stylesheet">
+    <link href="./css/custom.css" rel="stylesheet">
+    <link href="./css/datatables.css" rel="stylesheet">
+    <script src="./js/jquery_3.7.1.min.js"></script>
+    <script src="./js/bootstrap.bundle.min.js"></script>
+    <script src="./js/custom.js"></script>
+    <script src="./js/jquery.dataTables.min.js"></script>
+    <script src="assets/data/Facebook_sites.js"></script>
+    <script src="assets/data/Yandex_sites.js"></script>
+</head>
+
+<body>
+    <!-- Navigation Bar at the top of the page -->
+    <a href="" id="scroll" style="display: inline;"><span></span></a>
+    <header>
+        <nav class="navbar navbar-light bg-primary navbar-expand-sm fixed-top"
+            style="background-color: #e3f2fd!important;" id="header">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <span class="navbar-brand d-flex" id="brand-span">Local Mess</span>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#description">Description</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#meta-pixel">Facebook Pixel</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#yandex-metrica">Yandex Metrica</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#affected-sites">Affected Sites</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#history">History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#abuse-vectors">Abuse Vectors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#disclosure">Disclosure</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#awareness">Awareness</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#faq">FAQ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#contact">Contact</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link anchor" href="#resources">Additional Resources</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <main role="main" class="container">
+        <section class="jumbotron text-left" style="padding-bottom: 3%;" id="intro">
+            <div class="container mt-4">
+                <h2 class="jumbotron-heading" style="font-size: 2.1rem;">Disclosure: Covert Web-to-App Tracking via
+                    Localhost on Android</h2>
+                <br />
+                <img src="assets/img/websites-app-ID-sharing.png" alt="Web-to-native ID sharing" class="responsive-img">
+                <br>
+                <p class="lead">We disclose a novel tracking method by Meta and Yandex potentially affecting
+                    billions of Android users. We found that native Android apps—including <strong>Facebook,
+                        Instagram</strong>, and
+                    several <strong>Yandex apps including Maps and Browser—silently listen on fixed local
+                        ports</strong> for tracking purposes. </p>
+                <p class="lead">These native Android apps receive browsers' metadata, cookies and commands from
+                    the Meta Pixel and Yandex Metrica scripts embedded on thousands of web sites. These JavaScripts load
+                    on users' mobile browsers and silently connect with native apps running on the same device through
+                    localhost sockets. As native apps access programatically
+                    device identifiers like the <a
+                        href="https://support.google.com/googleplay/android-developer/answer/6048248">Android
+                        Advertising ID (AAID)</a> or handle user identities as in the case
+                    of Meta apps, this method effectively allows these organizations to <strong>link mobile
+                        browsing sessions and web cookies to user identities</strong>, hence de-anonymizing users'
+                    visiting sites embedding their scripts.</p>
+                <p class="lead">This web-to-app ID sharing method bypasses typical privacy protections such as clearing
+                    cookies, Incognito Mode and Android's permission controls. Worse, it opens the door for potentially
+                    malicious apps eavesdropping on users’ web activity.
+                </p>
+                <div class="alert alert-success" role="alert">
+                    📢 <strong>UPDATE</strong>: As of June 3rd 7:45 CEST, Meta/Facebook Pixel script is no longer
+                    sending
+                    any packets or requests to localhost. The code responsible for sending the _fbp cookie has been
+                    almost
+                    completely removed.</div>
+
+                <hr class="my-4">
+            </div>
+        </section>
+        <div class="container">
+            <div class="row page-header">
+                <div id="description" class="col-md-12">
+                    <h2>
+                        <span class="mb-3 mt-3">How does this work?</span>
+                    </h2>
+                    <p>
+                        While there are subtle differences in the way Meta and Yandex bridge web and mobile
+                        contexts and identifiers, both of them essentially misuse the unvetted access to localhost
+                        sockets.
+                        The Android OS allows any installed app with the INTERNET permission to open a
+                        listening socket on the loopback interface (127.0.0.1). Browsers running on the same
+                        device also access this interface without user consent or platform mediation. This
+                        allows JavaScript embedded on web pages to communicate with native Android apps and
+                        <strong>share identifiers and browsing habits</strong>, bridging ephemeral web identifiers
+                        to long-lived mobile app IDs using standard Web APIs.
+                    </p>
+                </div>
+                <br>
+                <div id="meta-pixel" class="col-md-12">
+                    <div>
+                        <h3>
+                            Meta/Facebook Pixel sharing _fbp cookie from web to Meta Android apps
+                        </h3>
+                        <p>
+                            The Meta (Facebook) Pixel JavaScript, when loaded in an Android mobile web browser,
+                            transmits
+                            the first-party <a
+                                href="https://web.archive.org/web/20250602140111/https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/fbp-and-fbc/"><strong>_fbp</strong></a>
+                            cookie using WebRTC to UDP ports 12580–12585 to
+                            any app on the device that is listening on those ports. We found Meta-owned Android apps
+                            Facebook
+                            (version 515.0.0.23.90) and Instagram
+                            (version 382.0.0.43.84), available on the Google Play Store, listening on these port range.
+                        </p>
+                        <img src="assets/img/adb_netstat_open_ports.png"
+                            alt="Meta apps Facebook and Instagram listening on the background" class="responsive-img">
+                        <br>
+                        <p>
+                            As of 25 2025, the Meta Pixel uses a technique known as
+                            <a href="https://webrtchacks.com/not-a-guide-to-sdp-munging/">SDP Munging</a> to insert
+                            the <strong>_fbp</strong> cookie contents to the SDP "ice-ufrag" field, resulting in a
+                            Binding Request STUN message sent to the loopback address as the following figure shows.
+                            This data flow cannot be observed using Chrome's regular debugging tools (such as DevTools).
+                        </p>
+                        <img src="assets/img/FB_STUN_message.png" alt="FB_STUN_message" class="responsive-img">
+                        <br />
+                        <p>
+                            The entire flow of the _fbp cookie from web to native and the server is as follows:
+                        </p>
+                        <ol>
+                            <li>
+                                The user opens the native Facebook or Instagram app, which eventually is sent to the
+                                background and creates
+                                a background service to listen for incoming traffic on a TCP port (12387 or 12388)
+                                and a UDP port (the first unoccupied port in 12580-12585). Users must be logged-in with
+                                their credentials on the apps.
+                            </li>
+                            <li>
+                                The user opens their browser and visits a website integrating the Meta Pixel.
+                            </li>
+                            <li>
+                                At this stage, websites may ask for consent depending on the website's and visitor's
+                                locations.</a>).
+                            </li>
+                            <li>
+                                The Meta Pixel script sends the <a href=#about_fbp>_fbp cookie</a>
+                                to the native Instagram or Facebook app via WebRTC (STUN) SDP Munging.
+                            </li>
+                            <li>
+                                The Meta Pixel script also sends the _fbp value in a request to
+                                https://www.facebook.com/tr
+                                along with other parameters such as page URL (dl), website and browser metadata, and the
+                                <a
+                                    href="https://web.archive.org/web/20250531104925/https://developers.facebook.com/docs/meta-pixel/reference/">event
+                                    type</a> (ev) (e.g., PageView, AddToCart, Donate, Purchase).
+                            </li>
+                            <li>
+                                The Facebook or Instagram apps receive the _fbp cookie from the Meta Pixel JavaScript
+                                running
+                                on the
+                                browser. The apps transmit _fbp as a GraphQL mutation to
+                                (https://graph[.]facebook[.]com/graphql) along with other persistent user identifiers,
+                                linking users' fbp ID (web visit) with their Facebook or Instagram account.
+                            </li>
+                        </ol>
+                        <img src="assets/img/FB_diagram.png" alt="FB_diagram" class="responsive-img">
+                        <br />
+                        On or around May 17th, Meta Pixel added a new method to their script that sends the _fbp cookie
+                        using <a href="https://webrtc.org/getting-started/turn-server?hl=es-419">WebRTC TURN</a> instead
+                        of STUN. The new TURN method avoids SDP Munging, which Chrome developers publicly announced
+                        to disable following our disclosure. As of June 2, 2025, we have not observed the Facebook
+                        or Instagram applications actively listening on these new ports.
+                    </div>
+                    <br>
+                    <div id="about_fbp">
+                        <h4>
+                            About the _fbp cookie
+                        </h4>
+                        <p>
+                            According to Meta’s Cookies Policy, the
+                            <a
+                                href="https://web.archive.org/web/20250602140832/https://www.facebook.com/privacy/policies/cookies/?subpage=subpage-1.3">_fbp
+                                cookie</a>
+                            <q>identifies browsers for the purposes of providing advertising and site analytics
+                                services and has a lifespan of 90 days</q>.
+                            The cookie is present on approximately 25% of the top million websites, making it the 3rd
+                            most common
+                            first-party cookie of the web,
+                            <a
+                                href="https://almanac.httparchive.org/en/2024/cookies#top-first-and-third-party-cookies-and-domains-setting-them">according
+                                to Web Almanac 2024</a>.
+                        </p>
+                        <p>
+                            A first-party cookie implies that it cannot be used to track users across websites, as it is
+                            set under the website’s domain.
+                            That means the same user has different _fbp cookies on different websites. However, the
+                            method we disclose allows the linking of the different _fbp cookies
+                            to the same user, which bypasses existing protections and runs counter to user expectations.
+                        </p>
+                    </div>
+                </div>
+
+
+
+                <div id="yandex-metrica" class="col-md-12">
+                    <div>
+                        <h3>
+                            Yandex using localhost communications since 2017
+                        </h3>
+                        <p>
+                            Yandex Metrica script initiates HTTP requests with long and opaque parameters to localhost
+                            through specific TCP ports: 29009, 29010, 30102, and 30103. Our investigation revealed
+                            that Yandex-owned applications—such as Yandex Maps and Yandex Navigator, Yandex Search,
+                            and Yandex Browser— actively listen on these ports. Furthermore, our analysis indicates
+                            that the domain yandexmetrica[.]com is resolving to the loopback address 127.0.0.1, and
+                            that the Yandex Metrica script transmits data via HTTPS to local ports 29010 and 30103.
+                            This design choice obfuscates the data exfiltration process, thereby complicating
+                            conventional detection mechanisms.
+                        </p>
+                        <img src="assets/img/Yandex_sending_localhost.png"
+                            alt="Yandex Metrica sending localhost requests" class="responsive-img">
+                        <br>
+                        <p>
+                            Yandex apps contact a Yandex domain (startup[.]mobile[.]yandex[.]net, or similar) to
+                            retrieve the list of ports to listen to. The endpoint returns a JSON containing the local
+                            ports (e.g., 30102, 29009) and a “first_delay_seconds” parameter which we believe is used
+                            to delay the initiation of the service. On one of our test devices, first_delay_seconds
+                            roughly corresponded to the number of seconds it took for the Yandex app to begin
+                            listening on local ports (~3 days).
+                        </p>
+                        <p>
+                            After receiving the localhost HTTP requests from the Yandex Metrica script, the mobile app
+                            responds with a Base64-encoded binary payload embedding and bridging
+                            the <a href="https://support.google.com/googleplay/android-developer/answer/6048248">Android
+                                Advertising ID (AAID)</a> along other
+                            identifiers accesible from Java APIs like the Google's advertising ID
+                            and UUIDs, potentially Yandex-specific. As opposed to Meta's Pixel case,
+                            all this information is aggregated and uploaded together to the Yandex
+                            Metrica server (e.g., mc[.]yango[.]com) by the JavaScript code running on the
+                            web browser, rather than by the native app. In the case of Yandex, the
+                            native app acts as a proxy to collect native Android-specific identifiers
+                            and transfering them to the browser context through localhost sockets.
+                        </p>
+                        <img src="assets/img/adb_netstat_open_ports_ym.png"
+                            alt="Yandex apps listening on the background" class="responsive-img">
+                        <br />
+                        <p>
+                            The entire flow of the Yandex communication from web to native and the server is as follows:
+                        </p>
+                        <ol>
+                            <li>
+                                The user opens one of the native Yandex apps, which eventually is sent to the background
+                                and
+                                creates a background service to listen for incoming traffic on two HTTP ports (29009 and
+                                30102)
+                                and two ports (29010 and 30103).
+                            </li>
+                            <li>
+                                The user opens their browser and visits a website integrating the Yandex Metrica script.
+                            </li>
+                            <li>
+                                The Yandex script sends a request to their servers to obtain obfuscated parameters.
+                            </li>
+                            <li>
+                                These obfuscated parameters are send to the localhost via both HTTP and HTTPS. This
+                                happens to
+                                a url that either directly contains the IP address 127.0.0.1, or the the
+                                yandexmetrica[.]com domain,
+                                which resolves to 127.0.0.1.
+                            </li>
+                            <li>
+                                The Yandex Metrica SDK in the app receives these parameters and responds to the Yandex
+                                Metrica
+                                script on the website with a 200 OK response containing encrypted Device IDs.
+                            </li>
+                            <li>
+                                The Yandex Metrica script on the website receives these IDs and sends them to their
+                                servers alongside
+                                the obfuscated parameters.
+                            </li>
+                        </ol>
+                        <img src="assets/img/Yandex_diagram.png" alt="Yandex_diagram" class="responsive-img">
+                        <div class="col-md-10"> <br />
+                            <p>
+                                This table shows the Yandex owned apps we found listening on localhost ports. For each
+                                app, we also list their unique package name and the version used for testing.
+                            </p>
+                            <table class="table table-striped table-bordered"
+                                style="margin-left:auto;margin-right:auto;">
+                                <thead>
+                                    <th><b>Yandex app</b></th>
+                                    <th><b>Package name</b></th>
+                                    <th><b>Tested version</b></th>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Yandex Maps</td>
+                                        <td><code>ru.yandex.yandexmaps</code></td>
+                                        <td style="text-align: right;">23.5.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Yandex Navigator</td>
+                                        <td><code>ru.yandex.yandexnavi</code></td>
+                                        <td style="text-align: right;">23.5.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Yandex Browser</td>
+                                        <td><code>com.yandex.browser</code></td>
+                                        <td style="text-align: right;">25.4.1.100</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Yandex Search</td>
+                                        <td><code>com.yandex.searchapp</code></td>
+                                        <td style="text-align: right;">25.41</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Metro in Europe — Vienna</td>
+                                        <td><code>ru.yandex.metro</code></td>
+                                        <td style="text-align: right;">3.7.3</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Yandex Go: Taxi Food</td>
+                                        <td><code>ru.yandex.taxi</code></td>
+                                        <td style="text-align: right;">5.24.1</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <br>
+                        <h4>
+                            Additional risk: Browsing history leak
+                        </h4>
+                        <p>
+                            Using HTTP requests for web-to-native ID sharing (i.e. not WebRTC STUN or TURN)
+                            may expose users browsing history to third-parties. A malicious third-party Android
+                            application that also listens on the aforementioned ports can intercept the HTTP requests
+                            sent by the Yandex Metrica script and the first, now-unused, implementation of Meta’s
+                            communication
+                            channel by monitoring the Origin HTTP header.</p>
+                        <p>We developed a proof-of-concept app to
+                            demonstrate the feasibility of this browsing history harvesting by a malicious third-party
+                            app. We found that browsers such as Chrome,
+                            Firefox and Edge are susceptible to this form of <strong>browsing history leakage in both
+                                default and private browsing modes</strong>. Brave browser was
+                            unaffected
+                            by this issue due to their blocklist and the blocking of requests to the
+                            localhost; and DuckDuckGo was only minimally affected due to missing domains in
+                            their blocklist.
+                        </p>
+                        <p>
+                            While the possibility for other apps to listen to these ports exitst, we have not observed
+                            any other app, not owned by Meta or Yandex, listening to these ports.
+                        </p>
+                        <div style="display: flex; align-items: stretch; justify-content: center; gap: 20px;">
+                            <img src="assets/img/POC-screenshot.png" alt="POC-screenshot"
+                                style="height: 400px; object-fit: cover;">
+                            <video style="height: 400px; object-fit: contain;" controls>
+                                <source src="assets/video/Yandex_Browsers_compressed.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <br>
+                        <p>
+                            Due to Yandex using HTTP requests for its localhost communications, any app listening on the
+                            required ports can monitor the website a user visited with these tracking
+                            capabilities as demonstrated by the video above.
+                            We first open our proof of concept app, which listens to the ports used by Yandex, and send
+                            it to the background. Next, we visit five websites across different browsers.
+                            Afterwards, we can see the URLs of these five sites listed in the app.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="affected-sites">
+                    <h2>
+                        <span class="mb-3 mt-3">Affected Sites</span>
+                    </h2>
+                    <p>
+                        According to BuiltWith, a website that tracks web technology adoption:
+                        Meta Pixel is <a href="https://trends.builtwith.com/websitelist/Facebook-Pixel">embedded on over
+                            5.8 million websites</a>.
+                        Yandex Metrica, on the other hand, is <a
+                            href="https://trends.builtwith.com/analytics/Yandex-Metrika"> present on close to 3 million
+                            websites</a>.
+                            According to HTTP Archive, an open and public dataset that runs monthly crawls of ~16 million websites,
+                            Meta Pixel and Yandex Metrica are present on  2.4 million and 575,448 websites, respectively.
+                    </p>
+                    <p>
+                        <b>Top-100k homepage crawls:</b> We performed two web crawls on the top 100k sites (based on <a
+                            href="https://github.com/zakird/crux-top-lists">CrUX rankings</a>)
+                        from servers located in Frankfurt and in New York to measure how widespread the use
+                        of localhost sockets is across sites. The following table shows the number of sites
+                        found affected for each case. The first column for each region shows the number of sites
+                        embedding these trackers when accepting all cookie consent forms.
+                        The second column (labeled as "no consent") reports the number of sites
+                        actively attempting to perform localhost communications by default as
+                        soon as the user loads them on their
+                        browser, i.e., potentially without user consent.
+                    </p>
+
+                    <div class="col-md-10">
+                        <table class="table table-striped compact table-bordered"
+                            style="margin-left:auto;margin-right:auto;">
+                            <thead>
+                                <th><b>Script name</b></th>
+                                <th><b>US presence</b></th>
+                                <th><b>US no consent</b></th>
+                                <th><b>Europe presence</b></th>
+                                <th><b>Europe no consent</b></th>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Meta Pixel</strong></td>
+                                    <td style="text-align: right;">17,223</td>
+                                    <td style="text-align: right;">13,468 (78.2%)</td>
+                                    <td style="text-align: right;">15,677</td>
+                                    <td style="text-align: right;">11,890 (75.8%)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Yandex Metrica</strong></td>
+                                    <td style="text-align: right;">1,312</td>
+                                    <td style="text-align: right;">1,095 (83.5%)</td>
+                                    <td style="text-align: right;">1,260 </td>
+                                    <td style="text-align: right;">1,064 (84.4%)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <br>
+                    <br>
+                    <br>
+                    <!-- FB Email Leaks Table -->
+                    <div id="FBTableWrapper" class="display">
+                        <h3 class="table-title">Sites with Meta Pixel</h3>
+                        <p class="table-top-explainer">
+                            Sites where Facebook/Meta pixel script attempts to
+                            share the _fbp ID with their Android apps using WebRTC.
+                            The table shows the URL and CrUX rank of the site,
+                            and if they were found in the EU or US crawl.
+                        </p>
+                        <table id="FBLeaksTable" class="display compact table-sm">
+                            <thead>
+                                <tr></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <p class="table-explainer">
+                            URL: URL of the affected website. <br>
+                            Ranking: Ranking bin as determined by the CRuX ranking (1000, 5000, 10000, 50000 or 100000)
+                            <br>
+                            EU and US:
+                        <ul class="table-explainer2">
+                            <li>Yes: ID sharing observed in this region.</li>
+                            <li>No: ID sharing not observed in this region.</li>
+                            <li>⚠️: Shares _fbp ID before any consent is given or the site does not have a consent form.
+                            </li>
+                        </ul>
+                        </p>
+                    </div>
+
+                    <!-- Ya Email Leaks Table -->
+                    <div id="YaTableWrapper" class="display">
+                        <h3 class="table-title">Sites with Yandex Metrica</h3>
+                        <p class="table-top-explainer">
+                            Sites where Yandex script sends HTTP requests to localhost ports.
+                            The table shows the URL and CrUX rank of the site, and if we observed a request
+                            to localhost in the EU or US crawl.
+                        </p>
+                        <table id="YaLeaksTable" class="display compact ">
+                            <thead>
+                                <tr></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <p class="table-explainer">
+                            URL: URL of the affected website. <br>
+                            Rank: CRuX Rank bin; indicates popularity (top 1000, 5000, 10000, 50000 or 100000) <br>
+                            EU and US:
+                        <ul class="table-explainer2">
+                            <li>Yes: ID sharing observed in this region.</li>
+                            <li>No: ID sharing not observed in this region.</li>
+                            <li>⚠️: Shares ID before any consent is given or the site does not have a consent form.</li>
+                        </ul>
+                        </p>
+                    </div>
+                    <br>
+                    <p> <strong>We would like to note that this crawling campaign is not exhaustive nor complete. Its
+                            purpose
+                            is to assess the prevalence of these behaviors in a representative sample of web
+                            sites.</strong>
+                        Therefore, the absence of a website in this list does not necessarily imply that it does not
+                        integrate
+                        these tracking capabilities.
+                    </p>
+                    <p>
+                        <strong>Crawling methodology:</strong>
+                        When visiting the site, our crawler waits for the page to load, after which it accepts
+                        all cookies on the site (if any). It then waits a further ten seconds, while collecting
+                        all HTTP requests, WebSocket frames and WebRTC function calls made during the visit.
+                        Analyzing this data, we found Meta’s pixel sending to localhost on 15,677 sites
+                        accessed from the EU and 17,223 sites accessed from the US. Yandex metrica was found on
+                        1,260 and 1,312 sites accessed from the EU and US, respectively.
+                    </p>
+                    <p>
+                        To assess whether these tracking practices occur without potential user consent,
+                        we performed a second crawling campaign without interacting with the
+                        cookie consent window (if any is prsented to the user).
+                        Even without actively giving consent to these sites (i.e., not accepting any cookies or no
+                        consent
+                        window),
+                        the Meta Pixel sends the fbp cookie to localhost
+                        on 11,890 and 13,468 sites accessed from the EU and US potentially without consent,
+                        respectively. In the case of Yandex, it triggers the localhost requests
+                        on 1,064 and 1,095 sites in the EU and US potentially without consent,
+                        respectively.
+                    </p>
+
+
+                </div>
+
+                <div id="history">
+                    <h2>
+                        <span class="mb-3 mt-3">When did this start?</span>
+                    </h2>
+                    <div class="col-md-10"> <br />
+                        <p>
+                            The following table shows the evolution of the methods used by Yandex and Meta over time,
+                            listing the
+                            date on which each method was first observed based on historical HTTP Archive data.
+                        </p>
+                        <table class="table table-striped table-bordered" style="margin-left:auto;margin-right:auto;">
+                            <thead>
+                                <th></th>
+                                <th><b>Method</b></th>
+                                <th><b>Start date (first seen)</b></th>
+                                <th><b>End date (last seen)</b></th>
+                                <th><b>Ports</b></th>
+                                <th><b>Har files</b></th>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td rowspan="2">Yandex</td>
+                                    <td>HTTP</td>
+                                    <td>Feb 2017</td>
+                                    <td>-</td>
+                                    <td style="text-align: right;">29009, 30102</td>
+                                    <td>
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Feb_1_2017/170201_35_FFJC.har.gz">1</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Feb_1_2017/170201_35_FF5V.har.gz">2</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Feb_1_2017/170201_35_FF7W.har.gz">3</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Feb_1_2017/170201_35_FFD8.har.gz">4</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Feb_1_2017/170201_35_FFD8.har.gz">5</a>,
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <!-- <td>Yandex</td> -->
+                                    <td>HTTPS</td>
+                                    <td>May 2018</td>
+                                    <td>-</td>
+                                    <td style="text-align: right;">29010, 30103</td>
+                                    <td>
+                                        -
+                                        <!-- <a href="">1</a>,
+                                        <a href="">2</a>,
+                                        <a href="">3</a>,
+                                        <a href="">4</a>,
+                                        <a href="">5</a>, -->
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="4">Meta</td>
+                                    <td>HTTP</td>
+                                    <td>Sep 2024</td>
+                                    <td>Oct 2024*</td>
+                                    <td style="text-align: right;">12387</td>
+                                    <td>
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Sep_1_2024/240912_Mx0_47Wl0.har.gz">1</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Sep_1_2024/240912_Mx0_54Wl0.har.gz">2</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Sep_1_2024/240912_Mx0_572l0.har.gz">3</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Sep_1_2024/240912_Mx0_2UCl0.har.gz">4</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Sep_1_2024/240912_Mx0_56Wl0.har.gz">5</a>,
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <!-- <td>Meta</td> -->
+                                    <td>Websocket</td>
+                                    <td>Nov 2024</td>
+                                    <td>Jan 2025</td>
+                                    <td style="text-align: right;">12387</td>
+                                    <td>
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_1BI.har.gz">1</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_1DM.har.gz">2</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_1GO.har.gz">3</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_1OU.har.gz">4</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_1Y0.har.gz">5</a>,
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <!-- <td>Meta</td> -->
+                                    <td>WebRTC STUN (w/ SDP Munging)</td>
+                                    <td>Nov 2024</td>
+                                    <td>-</td>
+                                    <td style="text-align: right;">12580-12585</td>
+                                    <td>
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_1QI.har.gz">1</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_1LK.har.gz">2</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_1P2.har.gz">3</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_2BCl0.har.gz">4</a>,
+                                        <a
+                                            href="https://storage.googleapis.com/httparchive/crawls/android-Nov_1_2024/241112_Mx0_1Q2.har.gz">5</a>,
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <!-- <td>Meta</td> -->
+                                    <td>WebRTC TURN** (w/o SPD Munging)</td>
+                                    <td>May 2025</td>
+                                    <td>-</td>
+                                    <td style="text-align: right;">12586-12591</td>
+                                    <td>
+                                        -
+                                        <!-- <a href="">1</a>,
+                                        <a href="">2</a>,
+                                        <a href="">3</a>,
+                                        <a href="">4</a>,
+                                        <a href="">5</a>, -->
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <ul class="table-explainer">
+                            <li>*: Meta Pixel script was last seen sending via HTTP in Oct 2024, but Facebook and
+                                Instagram apps still listen on this port today.
+                                They also listen on port 12388 for HTTP, but we have not found any script sending to
+                                12388.</li>
+                            <li>**: Meta Pixel script sends to these ports, but Meta apps do not listen on them (yet?).
+                                We speculate that this behavior could be due to slow/gradual app rollout.</li>
+                        </ul>
+                    </div>
+                </div>
+                <br>
+                <div id="abuse-vectors">
+                    <h2>
+                        <span class="mb-3 mt-3">Abuse Vectors</span>
+                    </h2>
+                    <p>
+                        This novel tracking method exploits unrestricted access to localhost sockets on the
+                        Android platforms, including most Android browsers. As we show, these trackers perform
+                        this practice without user
+                        awareness, as current privacy controls (e.g., sandboxing approaches,
+                        mobile platform and browser permissions,
+                        web consent models, incognito modes, <a
+                            href="https://support.google.com/googleplay/android-developer/answer/9857753">resetting
+                            mobile advertising IDs</a>, or clearing cookies)
+                        are insufficient to control and mitigate it.
+                    </p>
+                    <p>
+                        We note that localhost communications may be used for legitimate purposes such as
+                        web development. However, the
+                        research community has raised
+                        <a href="https://www.ndss-symposium.org/wp-content/uploads/2019/02/ndss2019_06B-5_Wu_paper.pdf">
+                            concerns</a> about localhost sockets becoming
+                        a potential vector for data leakage and persistent tracking. To the best of our
+                        knowledge, however, no evidence of real-world abuse for persistent user tracking
+                        across platforms has been reported until our disclosure.
+                    </p>
+                </div>
+                <div id="disclosure"></div>
+                <h2>
+                    <span class="mb-3 mt-3">Disclosure</span>
+                </h2>
+                <p>
+                    Our responsible disclosure to major Android browser vendors led to several patches
+                    attempting to mitigate this issue; some already deployed,
+                    others currently in development. We thank all participating vendors (Chrome, Mozilla, DuckDuckGo,
+                    and Brave) for their active collaboration and constructive engagement throughout the process.
+                    Other Chromium-based browsers should follow upstream code changes to patch their own products.
+                </p>
+
+                <p>
+                    However, beyond these short-term fixes, fully addressing the issue will require a broader set of
+                    measures as they are not covering the fundamental limitations of platforms' sandboxing
+                    methods and policies. These include user-facing controls to alert users about localhost access,
+                    stronger platform policies accompanied by consistent and strict enforcement actions
+                    to proactively prevent misuse, and enhanced security around
+                    Android’s interprocess communication (IPC) mechanisms, particularly those relying on localhost
+                    connections.
+                </p>
+                <p>
+                    This table shows an overview of our browser tests.
+                </p>
+                <table class="table table-striped table-bordered" style="margin-left:auto;margin-right:auto;">
+                    <thead>
+                        <th><b>Browser</b></th>
+                        <th><b>Version</b></th>
+                        <th><b>Yandex</b></th>
+                        <th><b>Facebook</b></th>
+                        <th><b>Mitigations</b></th>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Chrome</td>
+                            <td style="text-align: right;">136.0.7103.125</td>
+                            <td>Affected</td>
+                            <td>Affected</td>
+                            <td>Version 137, released on 26 May 2025, shipped countermeasures to block abused ports and
+                                disable
+                                the specific form of SDP munging that Meta Pixel used. As of 2 June 2025, these defenses
+                                are being
+                                trialed for a subset of Chrome users and will likely be released to general public soon.
+                                Our tests indicated these protections block the currently used forms of Meta and Yandex
+                                localhost communications. In the long term, the proposed
+                                <a href="https://github.com/explainers-by-googlers/local-network-access">Local Network
+                                    Access</a>
+                                standard may provide a more principle-based solution to limit this type of abuse.
+                            </td>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Microsoft Edge</td>
+                            <td style="text-align: right;">136.0.3240.50</td>
+                            <td>Affected</td>
+                            <td>Affected</td>
+                            <td>(unknown)</td>
+                        </tr>
+                        <tr>
+                            <td>Firefox</td>
+                            <td style="text-align: right;">138.0.2</td>
+                            <td>Affected</td>
+                            <td>Not affected.<sup>1</sup></td>
+                            <td>In progress.</td>
+                        </tr>
+                        <tr>
+                            <td>DuckDuckGo</td>
+                            <td style="text-align: right;">5.233.0</td>
+                            <td>Minimally affected<sup>2, 3</sup></td>
+                            <td>Not affected<sup>3</sup></td>
+                            <td>Blocklist amended.</td>
+                        </tr>
+                        <tr>
+                            <td>Brave</td>
+                            <td style="text-align: right;">1.78.102</td>
+                            <td>Not affected<sup>3</sup></td>
+                            <td>Not affected<sup>3, 4</sup></td>
+                            <td>Not affected. Localhost communications require user consent since 2022, and implements a
+                                blocklist.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <ol class="table-explainer">
+                    <li>SDP Munging of ICE credentials is blocked, however UDP communications to TURN ports
+                        are not yet blocked (they will be blocked in v138).
+                        Meta apps that we tested do not listen on the TURN ports as of the time of release,
+                        but Meta Pixel scripts already sends to TURN ports.
+                    </li>
+                    <li>Three alternate Yandex domains were missing from DuckDuckGo's blocklist,
+                        but the domains appeared on a very small number of websites (31/100K).
+                        DuckDuckGo quickly amended their blocklist to fix this blindspot.</li>
+                    <li>Blocklist based protections.</li>
+                    <li>Blocks localhost requests to "127.0.0.1" and "localhost".</li>
+                </ol>
+                <br>
+                <div id="awareness">
+                    <h3>
+                        Are website owners aware?
+                    </h3>
+                    <p>
+                        We do not find any public documentation by Meta or Yandex’ official documentation
+                        describing this method and its purpose. For Meta Pixel, we found several complaints from
+                        puzzled website owners questioning why Meta Pixel communicates with localhost in Facebook
+                        developer forums by September 2024:
+                    </p>
+                    <ul>
+                        <li><a
+                                href="https://web.archive.org/web/20250531105747/https://developers.facebook.com/community/threads/317050484803752/">
+                                Facebook SDK config file making call to localhost
+                            </a></li>
+                        <li><a
+                                href="https://web.archive.org/web/20250531105711/https://developers.facebook.com/community/threads/937149104821259/">
+                                Why does my Pixel Javascript access http://localhost when in an embedded web view on
+                                Android
+                            </a></li>
+                    </ul>
+                    <p>
+                        These complaints come from all around the world. No official response from Meta
+                        representatives is found on these threads. One developer stated in Sept. 2024:
+                        <q><i>No acknowledgement has come from Meta at all on this though.
+                                My support request with them got a generic response and then
+                                ignored thereafter.</i></q>
+                        <q><i>It's a shame accountability hasn't been taken, we rely on these tools to work
+                                properly and have no control over them so at the very least we should be
+                                given an explanation on what went wrong.</i></q>
+                    </p>
+                    <h3>
+                        Are end-users aware?
+                    </h3>
+                    <p>
+                        It is plausible that users browsing the Internet and visiting sites integrating Yandex
+                        and Meta’s ID bridging between web and native apps, may not be fully aware of this
+                        behavior. In fact, the novel tracking method works even if the user:
+                    </p>
+                    <ol>
+                        <li>Is not logged in to Facebook, Instagram or Yandex on their
+                            mobile browsers</li>
+                        <li>Uses Incognito Mode</li>
+                        <li>Clears their cookies or other browsing data</li>
+                    </ol>
+                    <p>
+                        This tracking method defeats Android's inter-process isolation and tracking protections
+                        based on partitioning, sandboxing, or clearing client-side state.
+                    </p>
+                    <p>
+                        Preliminary results suggest that these practices may be implemented
+                        in websites without explicit and appropriate cookie consent forms. If a site loads the
+                        Facebook or Yandex scripts before a user has given consent to the appropriate cookies,
+                        this behaviour will still be triggered.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div id="faq" class="page-header">
+            <h2 class="mb-3 mt-3">☝️ Questions & Answers</h2>
+            <div class="card">
+                <div class="card-body">
+                    <p><b>Q: Why did Facebook stop using this technique on the day of your public release?</b></p>
+                    <p><b>A:</b> We don’t know ¯\_(ツ)_/¯, but we're happy to see that Android users
+                        are no longer affected by this type abuse after our disclosure (for now).</p>
+
+                    <p><b>Q: Is this research peer-reviewed?</b></p>
+                    <p><b>A:</b> Our findings were confirmed by certain parties that we disclosed to, but the study
+                        isn’t peer-reviewed yet. We chose not to delay public disclosure for the publication cycle due
+                        to the severity of the active abuse.</p>
+
+                    <p><b>Q: Did Meta or Yandex disclose this method in their documentation?</b></p>
+                    <p><b>A:</b> We found no public technical documentation from Meta or Yandex describing this specific
+                        localhost-based communication technique. In developer forums, some developers have raised
+                        concerns about Pixel scripts contacting localhost, but received no detailed explanation.</p>
+
+                    <p><b>Q: Does this only affect Android users? What about iOS or other platforms?</b></p>
+                    <p><b>A:</b> We have only obtained empirical evidence of this web-to-native ID bridging
+                        Meta and Yandex web scripts, which exclusively targeted mobile Android users.
+                        No evidence of abuse has been observed in iOS browsers and apps that we tested. That said,
+                        similar
+                        data sharing between iOS browsers and native apps is <i>technically</i> possible.
+                        iOS browsers, which are all based on WebKit,
+                        <a href="https://bugs.webkit.org/show_bug.cgi?id=279249"> allow developers to
+                            programmatically establish localhost connections</a> and apps can listen on
+                        local ports.
+                        It is possible that technical and policy restrictions for running <a
+                            href="https://developer.apple.com/documentation/xcode/configuring-background-execution-modes">native
+                            apps in the background</a> may explain why iOS users were not targeted by these trackers.
+                        We note, however, that our iOS analysis is still preliminary and this behavior might have also
+                        violated PlayStore policies. Beyond mobile platforms,
+                        web-to-native ID bridging could also <a
+                            href="https://faculty.cc.gatech.edu/~frankli/papers/li-imc2021-weblocal.pdf">
+                            pose a threat</a> on desktop OSes and smart TV platforms, but
+                        we have not yet investigated these platforms.
+                    </p>
+                    </p>
+                    </p>
+                </div>
+            </div>
+            <br>
+        </div>
+        <!-- <div id="acknowledgments" class="page-header">
+                <h2 class="mb-3 mt-3">Acknowledgments</h2>
+                <p>
+                </p>
+            </div> -->
+        </div>
+
+        <div class="container">
+            <div class="row bg-light" id="footer">
+                <div class="col-md-12">
+                    <div class="mb-4">
+                        <div id="contact" class="page-header">
+                            <h2 class="mb-3 mt-3">Contact</h2>
+                            <p>
+                                To reach the entire team, please contact: <code>localmess@pm.me</code>
+                            </p>
+                            <div class="col-md-10">
+                                <table class="table table-striped table-bordered"
+                                    style="margin-left:auto;margin-right:auto;">
+                                    <tr class="success">
+                                        <td><b>Aniketh Girish</b> (PhD student)</td>
+                                        <td>IMDEA Networks</td>
+                                        <td>✉️ <code>aniketh.girish@imdea.org</code> </td>
+                                    </tr>
+                                    <tr class="active">
+                                        <td><b>Gunes Acar</b> (Assistant Professor)</td>
+                                        <td>Radboud University, Digital Security Group & iHub</td>
+                                        <td>✉️ <code>g.acar@cs.ru.nl</code></a></td>
+                                    </tr>
+                                    <tr class="warning">
+                                        <td><b>Narseo Vallina-Rodriguez</b> (Associate Professor)
+                                        </td>
+                                        <td>IMDEA Networks</td>
+                                        <td>✉️ <code>narseo.vallina@imdea.org</code></td>
+                                    </tr>
+                                    <tr class="danger">
+                                        <td><b>Nipuna Weerasekara</b> (PhD student)</td>
+                                        <td>IMDEA Networks</td>
+                                        <td>✉️ <code>nipuna.weerasekara@imdea.org</code></td>
+                                    </tr>
+                                    <tr class="success">
+                                        <td><b>Tim Vlummens</b> (PhD student)</td>
+                                        <td>COSIC, KU Leuven</td>
+                                        <td>✉️ <code>tim.vlummens@esat.kuleuven.be</code></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br>
+        <div>
+            <details id="resources">
+                <summary>📁 Additional Resources</summary>
+                <p class="table-explainer">- Video showing Yandex sending localhost requests. The left window shows a
+                    remote debugging inspector window of the browser on the Android phone.
+                    The right window shows the screen of the Android phone, with our proof-of-concept app at the top and
+                    the browser at the bottom:</p>
+                <video controls style="max-width: 600px; width: 100%;"
+                    src="assets/video/Yandex_sending_web_compressed.mp4" class="responsive-img">Your browser does not
+                    support the video tag.</video>
+                <br>
+                <p class="table-explainer">- Video showing Meta Pixel sending localhost STUN requests. The left window
+                    shows Wireshark, a program that monitors web traffic.
+                    The right window shows the browser visiting a website. Note that the requests only start sending
+                    once the page is loaded when emulating a Android phone (Pixel 7)
+                    and the breakpoint added to the Facebook script is passed:</p>
+                <video controls style="max-width: 600px; width: 100%;" src="assets/video/FB_sending_web_compressed.mp4"
+                    class="responsive-img">Your browser does not support the video tag.</video>
+                <p class="table-explainer">- Image showing Meta Pixel parameters for which ports and protocols to
+                    contact localhost.</p>
+                <img src="assets/img/fb_pixel_ports.png" class="responsive-img" />
+                <p class="table-explainer">- Image showing Meta Pixel performing SDP Munging to insert the _fbp cookie
+                    value.</p>
+                <img src="assets/img/fb_sdp_munging_red.png" class="responsive-img" />
+                <p class="table-explainer">- Image showing Meta Pixel using STUN to _pass fbp cookie value to mobile
+                    apps.</p>
+                <img src="assets/img/fb_stun.png" class="responsive-img" />
+            </details>
+        </div>
+        <br>
+        <img src="assets/img/logos/radboud_logo.png" alt="radboud_logo" style="height: 100px; object-fit: cover;">
+        <img src="assets/img/logos/logo-imdea-networks.png" alt="logo-imdea-networks"
+            style="height: 75px; object-fit: cover;">
+        <img src="assets/img/logos/logo-kuleuven-big.png" alt="logo-kuleuven-big"
+            style="height: 50px; object-fit: cover;">
+        <img src="assets/img/logos/logo-cosic.png" alt="logo-cosic" style="height: 100px; object-fit: cover;">
+        <br>
+        <br>
+        <br>
+    </main>
+
+    <style>
+        table {
+            margin: 5% auto;
+            width: 90%;
+        }
+
+        table.dataTable {
+            table-layout: fixed;
+            width: 90%;
+        }
+
+        table.dataTable tbody tr {
+            height: 40px;
+            line-height: 40px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .dataTables_filter {
+            margin-bottom: 1em;
+            margin-right: 5%;
+        }
+
+        .dataTables_length {
+            margin-bottom: 1em;
+            margin-left: 5%;
+        }
+
+        .dt-paging-button {
+            background-color: #e0e0e0;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            margin: 0 4px;
+            margin-bottom: 1em;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Hover effect */
+        .dt-paging-button:hover {
+            background-color: #b0b0b0;
+            color: #000;
+        }
+
+        /* Current (active) page button */
+        .dt-paging-button.current {
+            background-color: #b0b0b0;
+            font-weight: bold;
+        }
+
+        /* Disabled buttons */
+        .dt-paging-button.disabled {
+            background-color: #e0e0e0;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .dt-input {
+            margin-right: 1em;
+            margin-bottom: 1em;
+        }
+
+        .dt_info {
+            margin-left: 5%;
+            margin-top: 1em;
+            margin-bottom: 1em;
+        }
+
+        .table-explainer {
+            text-align: left;
+            /* margin-left: 5%; */
+            max-width: 800px;
+            margin-bottom: 0.5em;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .table-explainer2 {
+            text-align: left;
+            /* margin-left: 10%; */
+            max-width: 800px;
+            margin-bottom: 0.5em;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .table-top-explainer {
+            text-align: left;
+            /* margin-left: 5%; */
+            /* max-width: 800px; */
+            margin-bottom: 0.5em;
+            /* font-size: 20px; */
+            line-height: 1.4;
+        }
+
+        .table-title {
+            text-align: left;
+            /* margin-left: 5%; */
+            /* max-width: 800px; */
+            margin-bottom: 0.5em;
+            /* font-size: 20px; */
+            line-height: 1.4;
+        }
+
+        .tab {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .tab button {
+            padding: 10px 20px;
+            font-size: 30px;
+            cursor: pointer;
+            border: 1px solid #aaa;
+            background-color: #e0e0e0;
+            color: #000;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .tab button.active {
+            background-color: #b0b0b0;
+            color: #000;
+            border-color: #999;
+        }
+    </style>
+
+    <script>
+        let FBTable, YaTable;
+
+        const columnWidths = [
+            { width: '60%' },
+            { width: '10%' },
+            { width: '10%' },
+            { width: '10%' }
+        ];
+
+        function initDataTable(tableId, dataArray) {
+            if (!dataArray || dataArray.length === 0) return;
+
+            const headers = Object.keys(dataArray[0]);
+            const theadRow = $(`#${tableId} thead tr`);
+            theadRow.empty();
+            headers.forEach(h => theadRow.append(`<th>${h}</th>`));
+
+            // Prepare DataTables column definitions
+            const columns = headers.map((h, i) => ({
+                data: h,
+                width: columnWidths[i] ? columnWidths[i].width : null
+            }));
+
+            // Initialize DataTable and pass the data directly
+            return $(`#${tableId}`).DataTable({
+                data: dataArray,
+                columns: columns,
+                order: [[1, 'asc']],
+                pageLength: 10,
+                deferRender: true,
+                dom: 'lftrip',
+                columnDefs: [
+                    {
+                        targets: 1,
+                        className: 'dt-body-right'
+                    },
+                    {
+                        targets: '_all',
+                        className: 'dt-body-left'
+                    }
+                ]
+            });
+        }
+        $(document).ready(() => {
+            FBTable = initDataTable('FBLeaksTable', Facebook_sites);
+            YaTable = initDataTable('YaLeaksTable', Yandex_sites);
+
+            $('#FBTableWrapper').show();
+            $('#YaTableWrapper').show();
+
+            FBTable.columns.adjust().draw();
+            YaTable.columns.adjust().draw();
+        });
+    </script>
+    <script>
+        document.querySelectorAll('.navbar-collapse .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                const navbar = document.querySelector('#navbarCollapse');
+                const bsCollapse = bootstrap.Collapse.getInstance(navbar);
+                if (bsCollapse && navbar.classList.contains('show')) {
+                    bsCollapse.hide();
+                }
+            });
+        });
+    </script>
+    <script>
+        const summary = document.querySelector('#resources summary');
+
+        summary.addEventListener('click', () => {
+            // Remove focus immediately after click
+            setTimeout(() => summary.blur(), 0);
+        });
+    </script>
+</body>
+
+</html>
